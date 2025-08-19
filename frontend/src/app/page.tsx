@@ -1,9 +1,14 @@
 async function fetchPosts() {
-  const res = await fetch(process.env.NEXT_PUBLIC_API_URL + "/api/posts/", {
-    next: { revalidate: 60 },
-  });
-  if (!res.ok) return [];
-  return res.json();
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  try {
+    const res = await fetch(`${baseUrl}/api/posts/`, {
+      next: { revalidate: 60 },
+    });
+    if (!res.ok) return [];
+    return res.json();
+  } catch (_) {
+    return [];
+  }
 }
 
 export default async function Home() {
@@ -23,6 +28,9 @@ export default async function Home() {
             </a>
           </li>
         ))}
+        {posts.length === 0 && (
+          <li className="text-gray-500">No posts available or API unreachable.</li>
+        )}
       </ul>
     </main>
   );
