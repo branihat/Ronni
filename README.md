@@ -279,3 +279,45 @@ For issues and questions:
 ---
 
 **Happy Coding! 🎉**
+
+## 🗄️ Using MongoDB (Official Backend - Public Preview)
+
+This project can use MongoDB via the official `django-mongodb-backend` (Public Preview by MongoDB). Keep in mind it's intended for evaluation and may introduce breaking changes in future versions. SQLite remains the default fallback for local development.
+
+### 1) Install backend dependencies
+
+```bash
+cd backend
+source ./.venv/bin/activate  # or .venv\Scripts\activate on Windows
+pip install -r requirements.txt
+```
+
+### 2) Configure environment variables
+
+Set the following environment variables before starting Django:
+
+```bash
+export MONGODB_URI="mongodb+srv://<user>:<password>@<cluster>/<db>?retryWrites=true&w=majority&appName=<app>"
+export MONGODB_NAME="affiliate_blog"
+```
+
+On Windows (PowerShell):
+```powershell
+$env:MONGODB_URI = "mongodb+srv://<user>:<password>@<cluster>/<db>?retryWrites=true&w=majority&appName=<app>"
+$env:MONGODB_NAME = "affiliate_blog"
+```
+
+The backend will auto-detect `MONGODB_URI` and switch to MongoDB; otherwise it uses SQLite.
+
+### 3) Apply migrations
+
+```bash
+cd backend
+python manage.py makemigrations
+python manage.py migrate
+```
+
+### Notes
+- Backend uses `ENGINE = 'django_mongodb_backend'` when `MONGODB_URI` is present.
+- Works with Django 5.x.
+- For production, use MongoDB Atlas and secure credentials via environment variables/secrets.
