@@ -1,11 +1,19 @@
+import Header from "@/components/Header";
+import Hero from "@/components/Hero";
+import FeaturedPosts from "@/components/FeaturedPosts";
+import ProductGrid from "@/components/ProductGrid";
+import Sidebar from "@/components/Sidebar";
+import Footer from "@/components/Footer";
 async function fetchPosts() {
   const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
   try {
     const res = await fetch(`${baseUrl}/api/posts/`, {
-      next: { revalidate: 60 },
+      cache: 'no-store',
     });
     if (!res.ok) return [];
-    return res.json();
+    const data = await res.json();
+    const items = Array.isArray(data) ? data : (Array.isArray(data?.results) ? data.results : []);
+    return items;
   } catch (_) {
     return [];
   }
@@ -14,24 +22,19 @@ async function fetchPosts() {
 export default async function Home() {
   const posts = await fetchPosts();
   return (
-    <main className="max-w-3xl mx-auto p-6 space-y-6">
-      <h1 className="text-3xl font-bold">Latest Posts</h1>
-      <ul className="space-y-4">
-        {posts.map((post: any) => (
-          <li key={post.id} className="border p-4 rounded">
-            <h2 className="text-xl font-semibold">{post.title}</h2>
-            <a
-              className="text-blue-600 hover:underline"
-              href={`/posts/${post.slug}`}
-            >
-              Read more
-            </a>
-          </li>
-        ))}
-        {posts.length === 0 && (
-          <li className="text-gray-500">No posts available or API unreachable.</li>
-        )}
-      </ul>
-    </main>
+    <div className="min-h-screen bg-zinc-50">
+      <Header />
+      <Hero />
+      <div className="max-w-6xl mx-auto px-5 py-10">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2">
+            <FeaturedPosts posts={posts} />
+            <ProductGrid products={[]} />
+          </div>
+          <Sidebar />
+        </div>
+      </div>
+      <Footer />
+    </div>
   );
 }
