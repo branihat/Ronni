@@ -37,6 +37,7 @@ class AffiliateProduct(models.Model):
     rating = models.DecimalField(max_digits=2, decimal_places=1)
     pros = models.TextField()
     cons = models.TextField()
+    features = models.TextField(blank=True, help_text="One feature per line")
     updated = models.DateTimeField(auto_now=True)
 
     def __str__(self) -> str:

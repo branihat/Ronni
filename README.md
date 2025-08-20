@@ -321,3 +321,154 @@ python manage.py migrate
 - Backend uses `ENGINE = 'django_mongodb_backend'` when `MONGODB_URI` is present.
 - Works with Django 5.x.
 - For production, use MongoDB Atlas and secure credentials via environment variables/secrets.
+
+## 🧰 From-Scratch Setup (Step-by-Step)
+
+This section walks you from an empty machine to a working local environment with Django + Next.js + optional MongoDB + optional Gemini AI.
+
+### 0) Prerequisites
+- Python 3.11+ (Python 3.13 tested)
+- Node.js 18+
+- npm 10+
+- Git
+
+### 1) Clone and prepare folders
+```bash
+# Choose a workspace directory and clone (or create the project folder)
+cd ~/workspace
+# If not already cloned, create folder and place code here
+# mkdir -p "Afilliate project" && cd "Afilliate project"
+cd "Afilliate project"
+```
+
+### 2) Backend setup (Django)
+```bash
+cd backend
+
+# Create and activate virtual environment
+python3 -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+
+# Install dependencies
+pip install --upgrade pip
+pip install -r requirements.txt
+
+# Database migrations
+python manage.py makemigrations
+python manage.py migrate
+
+# Create admin user
+python manage.py createsuperuser
+# Follow prompts for username/email/password
+
+# Run the backend
+python manage.py runserver 0.0.0.0:8000
+```
+- Backend will be available at: http://localhost:8000
+- Admin: http://localhost:8000/admin
+
+### 3) Frontend setup (Next.js)
+```bash
+cd ../frontend
+npm install
+
+# Configure API URL
+echo "NEXT_PUBLIC_API_URL=http://localhost:8000" > .env.local
+
+# Run frontend
+npm run dev
+```
+- Frontend will be available at: http://localhost:3000
+
+### 4) MongoDB (optional)
+By default, the backend uses SQLite. To use MongoDB:
+```bash
+# Set env vars prior to running Django
+export MONGODB_URI="mongodb+srv://<user>:<password>@<cluster>/<db>?retryWrites=true&w=majority"
+export MONGODB_NAME="affiliate_blog"
+
+# Windows PowerShell
+# $env:MONGODB_URI = "mongodb+srv://<user>:<password>@<cluster>/<db>?retryWrites=true&w=majority"
+# $env:MONGODB_NAME = "affiliate_blog"
+
+# Then run migrations again
+cd backend
+python manage.py migrate
+python manage.py runserver 0.0.0.0:8000
+```
+- The project auto-detects `MONGODB_URI` and switches to MongoDB via `django-mongodb-backend`.
+
+### 5) Gemini AI (optional but recommended)
+This project can auto-generate blog posts from simple product data.
+
+Install SDK (already in requirements.txt, but if needed):
+```bash
+cd backend
+source .venv/bin/activate
+pip install google-generativeai==0.8.5
+```
+
+Set API key before running Django:
+```bash
+export GOOGLE_API_KEY="your-gemini-api-key"
+# Windows PowerShell
+# $env:GOOGLE_API_KEY = "your-gemini-api-key"
+```
+
+Flow:
+1) Add product in Admin: http://localhost:8000/admin
+   - Affiliate products → Add
+   - Required: name, image URL, affiliate URL, network
+   - Optional: description, price, rating
+   - Pros/Cons: multiline (one point per line)
+   - Features: multiline (one feature per line)
+2) Generate blog via API:
+```bash
+curl -X POST http://127.0.0.1:8000/api/generate-post/ \
+  -H "Content-Type: application/json" \
+  -d '{"product_id": 1}'
+```
+- If `GOOGLE_API_KEY` is set, content is generated via Gemini.
+- If not, a clean, templated post is created from your data.
+3) View post from frontend home (lists latest posts).
+
+### 6) Data seeding examples
+```bash
+# Set admin password quickly (if created via --noinput earlier)
+cd backend
+python manage.py shell -c "from django.contrib.auth import get_user_model; U=get_user_model(); u=U.objects.get(username='admin'); u.set_password('Admin@12345'); u.save()"
+
+# Create a sample product
+python manage.py shell -c "from blog.models import AffiliateProduct; AffiliateProduct.objects.get_or_create(name='Example Headphones', description='Crisp sound and all-day comfort', image='https://example.com/img.jpg', affiliate_url='https://amazon.com/dp/XXXX', network='Amazon', price=199, rating=4.5, pros='Great ANC\nComfortable', cons='Pricey', features='Bluetooth 5.3\n30h Battery\nUSB-C Fast Charge')"
+
+# Generate a post for product id=1
+curl -X POST http://127.0.0.1:8000/api/generate-post/ -H "Content-Type: application/json" -d '{"product_id": 1}'
+```
+
+### 7) Common issues & fixes
+- Frontend shows “No posts available or API unreachable”:
+  - Ensure backend is running on port 8000
+  - Verify `.env.local` has `NEXT_PUBLIC_API_URL=http://localhost:8000`
+  - Disable frontend caching (already set to `cache: 'no-store'`)
+- `posts.map is not a function` error:
+  - The API returns paginated `{results: [...]}`; frontend normalizes this. Restart `npm run dev` if still cached.
+- Backend `.venv` not found:
+  - Always run backend commands inside `backend` folder or use full path to the venv
+- MongoDB not connecting:
+  - Verify `MONGODB_URI` allows your IP (Atlas Network Access)
+  - Ensure migrations run after setting env vars
+- Gemini errors:
+  - Ensure `GOOGLE_API_KEY` is set
+  - The service falls back to templated content if the model call fails
+
+### 8) Project structure recap
+- Backend Django apps
+  - `blog/models.py`: Category, Post, AffiliateProduct, Review, Comment, NewsletterSignup
+  - `blog/views.py`: Post/Product/Review list endpoints, comment create, generate-post
+  - `blog/services.py`: Gemini integration (with fallback)
+  - `core/settings.py`: DRF, CORS, media/static, DB (SQLite/MongoDB via env)
+- Frontend Next.js
+  - `src/app/page.tsx`: Renders template layout and lists posts
+  - UI components: `Header`, `Hero`, `FeaturedPosts`, `ProductGrid`, `Sidebar`, `Footer`
+
+You’re set to run locally with SQLite or MongoDB, and optionally generate AI-written posts from your simple product entries. For a one-click Admin action to generate posts from the Django admin list view, ask and I’ll add it.

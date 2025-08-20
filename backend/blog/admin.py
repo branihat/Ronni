@@ -1,5 +1,7 @@
 from django.contrib import admin
 from .models import Category, Post, AffiliateProduct, Review, Comment, NewsletterSignup
+from django.urls import reverse
+from django.utils.html import format_html
 
 
 @admin.register(Category)
@@ -19,8 +21,12 @@ class PostAdmin(admin.ModelAdmin):
 
 @admin.register(AffiliateProduct)
 class AffiliateProductAdmin(admin.ModelAdmin):
-    list_display = ("name", "network", "price", "rating", "updated")
+    list_display = ("name", "network", "price", "rating", "updated", "generate_post_link")
     search_fields = ("name", "network")
+
+    def generate_post_link(self, obj):
+        return format_html('<a class="button" href="{}" target="_blank">Generate Post (API)</a>', '/api/generate-post/')
+    generate_post_link.short_description = "AI Post"
 
 
 @admin.register(Review)
