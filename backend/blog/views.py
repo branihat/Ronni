@@ -18,7 +18,7 @@ class PostDetail(generics.RetrieveAPIView):
     lookup_field = 'slug'
 
 
-class ProductList(generics.ListAPIView):
+class ProductList(generics.ListCreateAPIView):
     queryset = AffiliateProduct.objects.all()
     serializer_class = AffiliateProductSerializer
 
